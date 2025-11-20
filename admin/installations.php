@@ -83,6 +83,7 @@ $installations = $db->fetchAll('SELECT * FROM licenses ORDER BY created_at DESC'
         .offline { color: #9ca3af; }
         .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85em; margin-right: 5px; }
         .btn-activate { background: #10b981; color: white; }
+        .btn-extend { background: #8b5cf6; color: white; }
         .btn-suspend { background: #f59e0b; color: white; }
         .btn-reactivate { background: #3b82f6; color: white; }
         .btn-delete { background: #ef4444; color: white; }
@@ -129,6 +130,7 @@ $installations = $db->fetchAll('SELECT * FROM licenses ORDER BY created_at DESC'
                         <th>Status</th>
                         <th>Customer</th>
                         <th>Domain</th>
+                        <th>License Key</th>
                         <th>IP Address</th>
                         <th>Type</th>
                         <th>Expires</th>
@@ -149,6 +151,7 @@ $installations = $db->fetchAll('SELECT * FROM licenses ORDER BY created_at DESC'
                         </td>
                         <td><?= htmlspecialchars($inst['customer_name']) ?></td>
                         <td><?= htmlspecialchars($inst['domain']) ?></td>
+                        <td><code style="font-size:11px;"><?= htmlspecialchars($inst['license_key']) ?></code></td>
                         <td><?= htmlspecialchars($inst['ip_address'] ?? 'N/A') ?></td>
                         <td>
                             <span class="badge badge-<?= $inst['installation_type'] ?>"><?= ucfirst($inst['installation_type']) ?></span>
@@ -161,7 +164,8 @@ $installations = $db->fetchAll('SELECT * FROM licenses ORDER BY created_at DESC'
                         <td>
                             <?php if ($inst['installation_type'] === 'trial'): ?>
                                 <button class="btn btn-activate" onclick="activateLicense(<?= $inst['id'] ?>, '<?= addslashes($inst['domain']) ?>')">Activate</button>
-                            <?php elseif ($inst['status'] === 'active'): ?>
+                            <?php elseif ($inst['installation_type'] === 'paid' && $inst['status'] === 'active'): ?>
+                                <button class="btn btn-extend" onclick="extendLicense(<?= $inst['id'] ?>, '<?= addslashes($inst['domain']) ?>')">Extend</button>
                                 <button class="btn btn-suspend" onclick="suspendLicense(<?= $inst['id'] ?>, '<?= addslashes($inst['domain']) ?>')">Suspend</button>
                             <?php elseif ($inst['status'] === 'suspended'): ?>
                                 <button class="btn btn-reactivate" onclick="reactivateLicense(<?= $inst['id'] ?>, '<?= addslashes($inst['domain']) ?>')">Reactivate</button>
@@ -202,6 +206,36 @@ $installations = $db->fetchAll('SELECT * FROM licenses ORDER BY created_at DESC'
             .then(data => {
                 if (data.success) {
                     alert("✅ License activated for " + duration + " year(s) successfully!\n\nThe bot will continue using its existing license key.\nChanges will take effect on next license validation (within 1 hour).");
+                    location.reload();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            });
+        }
+
+        function extendLicense(licenseId, domain) {
+            const duration = prompt("Extend/Change license duration for " + domain + "\n\nEnter NEW total duration in years (1-5):\n(This will replace the current expiry date)", "5");
+            if (!duration || isNaN(duration) || duration < 1 || duration > 5) {
+                alert("Invalid duration. Must be 1-5 years.");
+                return;
+            }
+
+            if (!confirm("Change license to " + duration + " year(s)?\n\nThis will SET a new expiry date from today.")) return;
+
+            const formData = new FormData();
+            formData.append("license_id", licenseId);
+            formData.append("duration", duration);
+            formData.append("customer_name", domain); // Keep existing customer name
+            formData.append("customer_email", ""); // Keep existing email
+
+            fetch("../api/activate.php", {
+                method: "POST",
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    alert("✅ License extended to " + duration + " year(s) successfully!\n\nNew expiry date set.\nChanges will take effect on next license validation (within 1 hour).");
                     location.reload();
                 } else {
                     alert("Error: " + data.message);
