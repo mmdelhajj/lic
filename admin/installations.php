@@ -201,7 +201,7 @@ $installations = $db->fetchAll('SELECT * FROM licenses ORDER BY created_at DESC'
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    alert("License activated for " + duration + " year(s) successfully!\n\nNew License Key: " + data.data.new_license_key);
+                    alert("✅ License activated for " + duration + " year(s) successfully!\n\nThe bot will continue using its existing license key.\nChanges will take effect on next license validation (within 1 hour).");
                     location.reload();
                 } else {
                     alert("Error: " + data.message);

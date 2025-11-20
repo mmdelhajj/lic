@@ -42,23 +42,22 @@ try {
         die(json_encode(['success' => false, 'message' => 'License not found']));
     }
 
-    // Generate new PAID license key
-    $newLicenseKey = 'PAID-' . strtoupper(bin2hex(random_bytes(16)));
+    // Calculate new expiry date (keep same license key!)
     $expiresAt = date('Y-m-d H:i:s', strtotime('+' . $duration . ' years'));
 
-    // Update license
+    // Update license (DO NOT change license_key - bot needs to keep using same key!)
     $updateStmt = $db->query(
         'UPDATE licenses SET
-            license_key = ?,
             customer_name = ?,
             customer_email = ?,
             installation_type = "paid",
             status = "active",
             activated_by_admin = TRUE,
+            trial_ends_at = NULL,
             expires_at = ?,
             updated_at = NOW()
         WHERE id = ?',
-        [$newLicenseKey, $customerName, $customerEmail, $expiresAt, $licenseId]
+        [$customerName, $customerEmail, $expiresAt, $licenseId]
     );
 
     // Log activation
@@ -74,10 +73,11 @@ try {
 
     echo json_encode([
         'success' => true,
-        'message' => "License activated for $duration year(s) successfully",
+        'message' => "License activated for $duration year(s) successfully!",
         'data' => [
-            'new_license_key' => $newLicenseKey,
-            'expires_at' => $expiresAt
+            'license_key' => $license['license_key'], // Same key, just activated
+            'expires_at' => $expiresAt,
+            'duration_years' => $duration
         ]
     ]);
 
