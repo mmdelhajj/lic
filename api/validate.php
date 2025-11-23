@@ -11,6 +11,7 @@ require_once __DIR__ . '/../config/database.php';
 $licenseKey = $_GET['key'] ?? '';
 $domain = $_GET['domain'] ?? '';
 $fingerprint = $_GET['fingerprint'] ?? '';
+$serverIp = $_GET['server_ip'] ?? $_POST['server_ip'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 
 // Validate required fields
 if (empty($licenseKey) || empty($domain)) {
