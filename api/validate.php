@@ -23,13 +23,12 @@ if (empty($licenseKey) || empty($domain)) {
 }
 
 try {
-    $db = Database::getInstance();
+    $db = getDB();
 
     // Find license
-    $license = $db->fetchOne(
-        'SELECT * FROM licenses WHERE license_key = ?',
-        [$licenseKey]
-    );
+    $stmt = $db->prepare('SELECT * FROM licenses WHERE license_key = ?');
+    $stmt->execute([$licenseKey]);
+    $license = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$license) {
         echo json_encode([
@@ -71,7 +70,8 @@ try {
 
     if ($expiresAt < $now) {
         // Mark as expired
-        $db->query('UPDATE licenses SET status = ? WHERE id = ?', ['expired', $license['id']]);
+        $updateStmt = $db->prepare('UPDATE licenses SET status = ? WHERE id = ?');
+        $updateStmt->execute(['expired', $license['id']]);
 
         echo json_encode([
             'success' => false,
