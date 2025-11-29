@@ -80,7 +80,10 @@ try {
         exit;
     }
 
-    // License is valid
+    // License is valid - Update last_check, last_online, check_count
+    $updateStmt = $db->prepare('UPDATE licenses SET last_check = NOW(), last_online = NOW(), check_count = check_count + 1, ip_address = ? WHERE id = ?');
+    $updateStmt->execute([$serverIp, $license['id']]);
+
     $daysLeft = ceil(($expiresAt - $now) / 86400);
 
     echo json_encode([
